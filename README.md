@@ -154,7 +154,7 @@ http://thomas.apestaart.org/morituri/trac/).
 When filing bugs, please run the failing command with the environment variable
 `RIP_DEBUG` set; for example:
 
-    RIP_DEBUG=5 rip offset find > morituri.log 2>&1
+    RIP_DEBUG=10 rip offset find > morituri.log 2>&1
     gzip morituri.log
 
 And attach the gzipped log file to your bug report.

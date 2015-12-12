@@ -26,9 +26,9 @@ import os.path
 import commands
 import math
 import subprocess
+import logging
 
 from morituri.extern import asyncsub
-from morituri.extern.log import log
 
 FRAMES_PER_SECOND = 75
 

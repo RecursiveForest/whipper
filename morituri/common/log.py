@@ -24,10 +24,11 @@
 Logging
 """
 
-from morituri.extern.log import log as externlog
-from morituri.extern.log.log import *
-
+import os
+import logging
 
 def init():
-    externlog.init('RIP_DEBUG')
-    externlog.setPackageScrubList('morituri')
+    level = logging.WARNING
+    if 'RIP_DEBUG' in os.environ:
+        level = os.environ['RIP_DEBUG']
+    logging.basicConfig(level=level);

@@ -29,10 +29,9 @@ import shutil
 from morituri.result import result
 from morituri.common import directory
 
-from morituri.extern.log import log
+import logging
 
-
-class Persister(log.Loggable):
+class Persister(object):
     """
     I wrap an optional pickle to persist an object to disk.
 
@@ -115,7 +114,7 @@ class Persister(log.Loggable):
         os.unlink(self._path)
 
 
-class PersistedCache(log.Loggable):
+class PersistedCache(object):
     """
     I wrap a directory of persisted objects.
     """
@@ -152,7 +151,7 @@ class PersistedCache(log.Loggable):
         return persister
 
 
-class ResultCache(log.Loggable):
+class ResultCache(object):
 
     def __init__(self, path=None):
         if not path:
@@ -196,7 +195,7 @@ class ResultCache(log.Loggable):
         return [os.path.splitext(os.path.basename(path))[0] for path in paths]
 
 
-class TableCache(log.Loggable):
+class TableCache(object):
 
     """
     I read and write entries to and from the cache of tables.

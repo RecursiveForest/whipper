@@ -4,29 +4,29 @@
 import os
 import signal
 import subprocess
+import logging
 
 from morituri.extern import asyncsub
-from morituri.extern.log import log
 from morituri.extern.task import task, gstreamer
 
 # log.Loggable first to get logging
 
 
-class SyncRunner(log.Loggable, task.SyncRunner):
+class SyncRunner(task.SyncRunner):
     pass
 
 
-class LoggableTask(log.Loggable, task.Task):
+class LoggableTask(task.Task):
     pass
 
-class LoggableMultiSeparateTask(log.Loggable, task.MultiSeparateTask):
+class LoggableMultiSeparateTask(task.MultiSeparateTask):
     pass
 
-class GstPipelineTask(log.Loggable, gstreamer.GstPipelineTask):
+class GstPipelineTask(gstreamer.GstPipelineTask):
     pass
 
 
-class PopenTask(log.Loggable, task.Task):
+class PopenTask(task.Task):
     """
     I am a task that runs a command using Popen.
     """
