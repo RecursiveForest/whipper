@@ -1,16 +1,10 @@
-CLEANFILES = *.py{c,o} command/*.py{c,o} log/*.py{c,o}
+CLEANFILES = *.py{c,o} command/*.py{c,o} 
 
 morituridir = $(PYTHONLIBDIR)/morituri/extern
 
 morituri_PYTHON = \
 	__init__.py \
 	asyncsub.py
-
-logdir = $(PYTHONLIBDIR)/morituri/extern/log
-
-log_PYTHON = \
-	log/__init__.py \
-	log/log.py
 
 commanddir = $(PYTHONLIBDIR)/morituri/extern/command
 
@@ -44,8 +38,6 @@ musicbrainzngs_PYTHON = \
 
 EXTRA_DIST = python-command/scripts/help2man
 
-log:
-	make git-submodule
 musicbrainzngs:
 	make git-submodule
 
@@ -55,4 +47,4 @@ git-submodule:
 .PHONY: git-submodule
 
 
-all-local: log musicbrainzngs
+all-local: musicbrainzngs
