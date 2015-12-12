@@ -32,7 +32,7 @@ PYCHECKER_WHITELIST = \
 
 PYCHECKER_BLACKLIST = \
 	morituri/common/taskgtk.py \
-	morituri/extern/asyncsub.py \
+	morituri/extern/asyncsub.py
 
 release: dist
 	make $(PACKAGE)-$(VERSION).tar.bz2.md5
