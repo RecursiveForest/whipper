@@ -19,7 +19,6 @@ addons:
             - swig
             - python-dev
             - python-gst0.10
-            - python-gi
 
 install:
     # Dependencies
