@@ -19,9 +19,7 @@ addons:
             - swig
             - python-dev
             - python-gst0.10
-
-before_install:
-    - sudo apt-get update -qq
+            - python-gi
 
 install:
     # Dependencies
