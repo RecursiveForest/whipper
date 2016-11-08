@@ -27,7 +27,7 @@ def length(track_path):
     """
     Accepts a path to a sox-decodable audio file.
 
-    Returns track sample length in sample-pairs derived from sox 'samples read'
+    Returns track length in sample-pairs derived from sox 'samples read'
     divided by two (one sample per channel = two simultaneous samples) as an
     int.
     Returns None on error.
