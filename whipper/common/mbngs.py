@@ -22,6 +22,7 @@
 Handles communication with the MusicBrainz server using NGS.
 """
 
+import musicbrainzngs
 import urllib2
 
 import logging
@@ -263,8 +264,9 @@ def musicbrainz(discid, country=None, record=False):
 
     @rtype: list of L{DiscMetadata}
     """
+    musicbrainzngs.set_useragent("whipper", whipper.__version__,
+                                 "https://github.com/JoeLametta/whipper")
     logger.debug('looking up results for discid %r', discid)
-    import musicbrainzngs
 
     ret = []
 

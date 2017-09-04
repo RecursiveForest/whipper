@@ -4,7 +4,6 @@
 import os
 import sys
 import pkg_resources
-import musicbrainzngs
 
 import whipper
 
@@ -19,9 +18,6 @@ logger = logging.getLogger(__name__)
 
 
 def main():
-    # set user agent
-    musicbrainzngs.set_useragent("whipper", whipper.__version__,
-                                 "https://github.com/JoeLametta/whipper")
     # register plugins with pkg_resources
     distributions, _ = pkg_resources.working_set.find_plugins(
         pkg_resources.Environment([directory.data_path('plugins')])
@@ -36,8 +32,13 @@ def main():
                 cmd.options.eject in ('failure', 'always')):
             eject_device(e.device)
         return 255
+    except RuntimeError, e:
+        print(e)
+        return 1
+    except KeyboardInterrupt:
+        return 2
     except ImportError, e:
-        raise ImportError(e)
+        raise
     except task.TaskException, e:
         if isinstance(e.exception, ImportError):
             raise ImportError(e.exception)

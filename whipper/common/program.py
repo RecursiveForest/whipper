@@ -37,8 +37,17 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-# FIXME: should Program have a runner ?
-
+def _prompt_for_key(prompt, items, guess):
+    while True:
+        try:
+            selection = raw_input(prompt % guess)
+            if not selection:
+                selection = guess
+            if selection in items:
+                return items[selection]
+        except EOFError:
+            print('^D')
+            return
 
 class Program:
     """
@@ -292,140 +301,67 @@ class Program:
 
         return None
 
-    def getMusicBrainz(self, ittoc, mbdiscid, release=None, country=None,
+    def getMusicBrainz(self, ittoc, mbdiscid, release_id=None, country=None,
                        prompt=False):
         """
-        @type  ittoc: L{whipper.image.table.Table}
+        return metadata from MusicBrainz as mbngs.DiscMetadata
         """
-        # look up disc on MusicBrainz
-        self._stdout.write('Disc duration: %s, %d audio tracks\n' % (
-            common.formatTime(ittoc.duration() / 1000.0),
-            ittoc.getAudioTracks()))
-        logger.debug('MusicBrainz submit url: %r',
-                     ittoc.getMusicBrainzSubmitURL())
-        ret = None
-
-        metadatas = None
-        e = None
-
+        # XXX: why retry after MusicBrainzException...?
         for _ in range(0, 4):
             try:
-                metadatas = mbngs.musicbrainz(mbdiscid,
-                                              country=country,
-                                              record=self._record)
+                releases = mbngs.musicbrainz(mbdiscid,
+                                             country=country,
+                                             record=self._record)
+                releases = {r.mbid: r for r in releases}
                 break
             except mbngs.NotFoundException, e:
                 break
             except musicbrainzngs.NetworkError, e:
-                self._stdout.write("Warning: network error: %r\n" % (e, ))
+                logger.warning("network error: %r", e)
                 break
             except mbngs.MusicBrainzException, e:
+                # XXX: ???
                 self._stdout.write("Warning: %r\n" % (e, ))
                 time.sleep(5)
                 continue
 
-        if not metadatas:
-            if e:
-                self._stdout.write("Error: %r\n" % (e, ))
-            self._stdout.write('Continuing without metadata\n')
+        if not releases:
+            print('continuing without metadata')
+            print('please submit this disc to MusicBrainz at the above URL')
+            return
 
-        if metadatas:
-            deltas = {}
+        print('\nmatching releases:')
 
-            self._stdout.write('\nMatching releases:\n')
+        for r in releases.values():
+            print
+            print('artist  : %s' % r.artist.encode('utf-8'))
+            print('title   : %s' % r.title.encode('utf-8'))
+            print('duration: %s' % common.formatTime(r.duration / 1000.0))
+            print('URL     : %s' % r.url)
+            print('release : %s' % r.mbid)
+            print('type    : %s' % r.releaseType)
+            if r.barcode:
+                print("barcode : %s" % r.barcode)
+            if r.catalogNumber:
+                print("cat no  : %s" % r.catalogNumber)
+        print
 
-            for metadata in metadatas:
-                self._stdout.write('\n')
-                self._stdout.write('Artist  : %s\n' %
-                                   metadata.artist.encode('utf-8'))
-                self._stdout.write('Title   : %s\n' %
-                                   metadata.title.encode('utf-8'))
-                self._stdout.write('Duration: %s\n' %
-                                   common.formatTime(metadata.duration /
-                                                     1000.0))
-                self._stdout.write('URL     : %s\n' % metadata.url)
-                self._stdout.write('Release : %s\n' % metadata.mbid)
-                self._stdout.write('Type    : %s\n' % metadata.releaseType)
-                if metadata.barcode:
-                    self._stdout.write("Barcode : %s\n" % metadata.barcode)
-                if metadata.catalogNumber:
-                    self._stdout.write("Cat no  : %s\n" %
-                                       metadata.catalogNumber)
+        if release_id:
+            return releases[release_id]
 
-                delta = abs(metadata.duration - ittoc.duration())
-                if delta not in deltas:
-                    deltas[delta] = []
-                deltas[delta].append(metadata)
+        # Guess the release that most closely matches the duration.
+        deltas = {}
+        for r in releases.values():
+            delta = abs(r.duration - ittoc.duration())
+            if delta not in deltas:
+                deltas[delta] = []
+            deltas[delta].append(r)
+        release = deltas[min(deltas.keys())][0]
 
-            lowest = None
-
-            if not release and len(metadatas) > 1:
-                # Select the release that most closely matches the duration.
-                lowest = min(deltas.keys())
-
-                if prompt:
-                    guess = (deltas[lowest])[0].mbid
-                    release = raw_input(
-                        "\nPlease select a release [%s]: " % guess)
-
-                    if not release:
-                        release = guess
-
-            if release:
-                metadatas = [m for m in metadatas if m.url.endswith(release)]
-                logger.debug('Asked for release %r, only kept %r',
-                             release, metadatas)
-                if len(metadatas) == 1:
-                    self._stdout.write('\n')
-                    self._stdout.write('Picked requested release id %s\n' %
-                                       release)
-                    self._stdout.write('Artist : %s\n' %
-                                       metadatas[0].artist.encode('utf-8'))
-                    self._stdout.write('Title :  %s\n' %
-                                       metadatas[0].title.encode('utf-8'))
-                elif not metadatas:
-                    self._stdout.write(
-                        "Requested release id '%s', "
-                        "but none of the found releases match\n" % release)
-                    return
-            else:
-                if lowest:
-                    metadatas = deltas[lowest]
-
-            # If we have multiple, make sure they match
-            if len(metadatas) > 1:
-                artist = metadatas[0].artist
-                releaseTitle = metadatas[0].releaseTitle
-                for i, metadata in enumerate(metadatas):
-                    if not artist == metadata.artist:
-                        logger.warning("artist 0: %r and artist %d: %r "
-                                       "are not the same" % (
-                                           artist, i, metadata.artist))
-                    if not releaseTitle == metadata.releaseTitle:
-                        logger.warning("title 0: %r and title %d: %r "
-                                       "are not the same" % (
-                                           releaseTitle, i,
-                                           metadata.releaseTitle))
-
-                if (not release and len(deltas.keys()) > 1):
-                    self._stdout.write('\n')
-                    self._stdout.write('Picked closest match in duration.\n')
-                    self._stdout.write('Others may be wrong in MusicBrainz, '
-                                       'please correct.\n')
-                    self._stdout.write('Artist : %s\n' %
-                                       artist.encode('utf-8'))
-                    self._stdout.write('Title :  %s\n' %
-                                       metadatas[0].title.encode('utf-8'))
-
-            # Select one of the returned releases. We just pick the first one.
-            ret = metadatas[0]
-        else:
-            self._stdout.write(
-                'Submit this disc to MusicBrainz at the above URL.\n')
-            ret = None
-
-        self._stdout.write('\n')
-        return ret
+        if len(releases) > 1 and prompt:
+            release = _prompt_for_key("select a release [%s]: ",
+                                      releases, release.mbid)
+        return release
 
     def getTagList(self, number):
         """

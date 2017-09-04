@@ -67,6 +67,11 @@ disc and track template are:
 '''
 
 
+def bye(msg):
+    logger.critical(msg)
+    raise RuntimeError(msg)
+
+
 class _CD(BaseCommand):
 
     """
@@ -116,39 +121,40 @@ class _CD(BaseCommand):
 
         # already show us some info based on this
         self.program.getRipResult(self.ittoc.getCDDBDiscId())
-        sys.stdout.write("CDDB disc id: %s\n" % self.ittoc.getCDDBDiscId())
+        print("CDDB disc id: %s" % self.ittoc.getCDDBDiscId())
         self.mbdiscid = self.ittoc.getMusicBrainzDiscId()
-        sys.stdout.write("MusicBrainz disc id %s\n" % self.mbdiscid)
-
-        sys.stdout.write("MusicBrainz lookup URL %s\n" %
-                         self.ittoc.getMusicBrainzSubmitURL())
+        print("MusicBrainz disc id: %s" % self.mbdiscid)
+        print("MusicBrainz lookup URL: %s" %
+              self.ittoc.getMusicBrainzSubmitURL())
+        print('disc duration: %s, %d audio tracks' % (
+              common.formatTime(self.ittoc.duration() / 1000.0),
+              self.ittoc.getAudioTracks()))
 
         self.program.metadata = (
             self.program.getMusicBrainz(self.ittoc, self.mbdiscid,
-                                        release=self.options.release_id,
+                                        release_id=self.options.release_id,
                                         country=self.options.country,
                                         prompt=self.options.prompt)
         )
 
         if not self.program.metadata:
             # fall back to FreeDB for lookup
+            logger.debug("falling back to freedb")
             cddbid = self.ittoc.getCDDBValues()
             cddbmd = self.program.getCDDB(cddbid)
+            logger.debug("freedb id, md: %s, %s", cddbid, cddbmd)
             if cddbmd:
                 sys.stdout.write('FreeDB identifies disc as %s\n' % cddbmd)
 
             # also used by rip cd info
-            if not getattr(self.options, 'unknown', False):
-                logger.critical("unable to retrieve disc metadata, "
-                                "--unknown not passed")
-                return -1
+            if not self.options.unknown:
+                bye("unable to retrieve disc metadata, need cd -u to rip "
+                    "unknown disc")
 
         self.program.result.isCdr = cdrdao.DetectCdr(self.device)
         if (self.program.result.isCdr and
                 not getattr(self.options, 'cdr', False)):
-            logger.critical("inserted disc seems to be a CD-R, "
-                            "--cdr not passed")
-            return -1
+            bye("CD-R detected, need cd -r to rip")
 
         # FIXME ?????
         # Hackish fix for broken commit
