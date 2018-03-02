@@ -47,9 +47,6 @@ class Config:
             with codecs.open(self._path, 'r', encoding='utf-8') as f:
                 self._parser.readfp(f)
 
-        logger.info('Loaded %d sections from config file' %
-                    len(self._parser.sections()))
-
     def write(self):
         fd, path = tempfile.mkstemp(suffix=u'.whipperrc')
         handle = os.fdopen(fd, 'w')
@@ -140,41 +137,25 @@ class Config:
                 vendor, model, release))
 
     def _findDriveSection(self, vendor, model, release):
-        for name in self._parser.sections():
-            if not name.startswith('drive:'):
-                continue
+        section = 'drive:' + ':'.join([
+            urllib.quote(v.replace(' ', '')) for v in (vendor, model, release)
+        ])
+        logger.debug('Looking at section %r' % section)
+        if not self._parser.has_section(section):
+            raise KeyError("Could not find configuration section %s" % section)
+        return section
 
-            logger.debug('Looking at section %r' % name)
-            conf = {}
-            for key in ['vendor', 'model', 'release']:
-                locals()[key] = locals()[key].strip()
-                conf[key] = self._parser.get(name, key)
-                logger.debug("%s: '%s' versus '%s'" % (
-                    key, locals()[key], conf[key]
-                ))
-            if vendor.strip() != conf['vendor']:
-                continue
-            if model.strip() != conf['model']:
-                continue
-            if release.strip() != conf['release']:
-                continue
-
-            return name
-
-        raise KeyError("Could not find configuration section for %s/%s/%s" % (
-            vendor, model, release))
+    def _createDriveSection(self, vendor, model, release):
+        section = 'drive:' + ':'.join([
+            urllib.quote(v.replace(' ', ''))
+            for v in (vendor, model, release)
+        ])
+        self._parser.add_section(section)
+        self.write()
+        return section
 
     def _findOrCreateDriveSection(self, vendor, model, release):
         try:
-            section = self._findDriveSection(vendor, model, release)
+            return self._findDriveSection(vendor, model, release)
         except KeyError:
-            section = 'drive:' + urllib.quote('%s:%s:%s' % (
-                vendor, model, release))
-            self._parser.add_section(section)
-            __pychecker__ = 'no-local'
-            for key in ['vendor', 'model', 'release']:
-                self._parser.set(section, key, locals()[key].strip())
-
-        self.write()
-
-        return self._findDriveSection(vendor, model, release)
+            return self._createDriveSection(vendor, model, release)

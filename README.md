@@ -171,7 +171,8 @@ The configuration file consists of newline-deliniated `[sections]`
 containing `key = value` pairs. The sections `[main]` and
 `[musicbrainz]` are special config sections for options not respresented
 from the command line interface.  Sections beginning with `drive` are
-written by whipper; certain values should not be edited.
+written to by `whipper drive analyze` and `whipper offset find` but can
+be edited by hand.
 
 Example configuration demonstrating all `[main]` and `[musicbrainz]`
 options:
@@ -187,7 +188,6 @@ server = musicbrainz.org:80	; use musicbrainz server at host[:port]
 [drive:HL-20]
 defeats_cache = True		; whether the drive is capable of defeating the audio cache
 read_offset = 6			; drive read offset in positive/negative frames (no leading +)
-# do not edit the values 'vendor', 'model', and 'release'; they are used by whipper to match the drive
 
 # command line defaults for `whipper cd rip`
 [whipper.cd.rip]
