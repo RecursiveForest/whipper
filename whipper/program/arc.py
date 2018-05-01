@@ -6,6 +6,7 @@ logger = logging.getLogger(__name__)
 ARB = 'accuraterip-checksum'
 FLAC = 'flac'
 
+RC_ERROR_MSG = 'ARC calculation failed: %s return code is non zero: %r'
 
 def _execute(cmd, **redirects):
     logger.debug('executing %r', cmd)
@@ -36,18 +37,10 @@ def accuraterip_checksum(f, track_number, total_tracks, wave=False, v2=False):
     if not wave:
         flac.wait()
         if flac.returncode != 0:
-            logger.warning(
-                'ARC calculation failed: flac return code is non zero: %r' %
-                flac.returncode
-            )
-            return None
+            raise RuntimeError(RC_ERROR_MSG % (FLAC, flac.returncode))
 
     if arc.returncode != 0:
-        logger.warning(
-            'ARC calculation failed: arc return code is non zero: %r' %
-            arc.returncode
-        )
-        return None
+        raise RuntimeError(RC_ERROR_MSG % (ARB, flac.returncode))
 
     try:
         checksum = int('0x%s' % out.strip(), base=16)
