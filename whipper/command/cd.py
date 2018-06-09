@@ -242,6 +242,11 @@ Log files will log the path to tracks relative to this directory.
                                  action="store", dest="offset",
                                  default=default_offset,
                                  help="sample read offset")
+        self.parser.add_argument('-c', '--continue',
+                                 action="store_true", dest="continue",
+                                 default=False,
+                                 help="Continue ripping disc in the event"
+                                 " of track errors.")
         self.parser.add_argument('-x', '--force-overread',
                                  action="store_true", dest="overread",
                                  default=False,
@@ -411,11 +416,12 @@ Log files will log the path to tracks relative to this directory.
                                      e, tries)
 
                 if tries == MAX_TRIES:
-                    logger.critical('Giving up on track %d after %d times' % (
-                        number, tries))
-                    raise RuntimeError(
-                        "track can't be ripped. "
-                        "Rip attempts number is equal to 'MAX_TRIES'")
+                    logger.critical(
+                        'Giving up on track %d after %d tries' % (number, tries)
+                    )
+                    if not self.options.continue:
+                        raise RuntimeError("could not rip track %d" % number)
+
                 if trackResult.testcrc == trackResult.copycrc:
                     sys.stdout.write('CRCs match for track %d\n' % number)
                 else:
