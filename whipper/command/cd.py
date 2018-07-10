@@ -25,6 +25,7 @@ import glob
 import sys
 import logging
 from whipper.command.basecommand import BaseCommand
+from whipper.common.path import result_path
 from whipper.common import (
     accurip, config, drive, program, task
 )
@@ -36,31 +37,6 @@ logger = logging.getLogger(__name__)
 
 SILENT = 0
 MAX_TRIES = 5
-
-DEFAULT_TRACK_TEMPLATE = u'%r/%A - %d/%t. %a - %n'
-DEFAULT_DISC_TEMPLATE = u'%r/%A - %d/%A - %d'
-
-TEMPLATE_DESCRIPTION = '''
-Tracks are named according to the track template, filling in the variables
-and adding the file extension.  Variables exclusive to the track template are:
- - %t: track number
- - %a: track artist
- - %n: track title
- - %s: track sort name
-
-Disc files (.cue, .log, .m3u) are named according to the disc template,
-filling in the variables and adding the file extension. Variables for both
-disc and track template are:
- - %A: album artist
- - %S: album sort name
- - %d: disc title
- - %y: release year
- - %r: release type, lowercase
- - %R: Release type, normal case
- - %x: audio extension, lowercase
- - %X: audio extension, uppercase
-
-'''
 
 
 class _CD(BaseCommand):
@@ -299,6 +275,10 @@ Log files will log the path to tracks relative to this directory.
             self.options.working_directory = os.path.expanduser(
                 self.options.working_directory)
 
+        # validate disc and track paths or reap ValueError
+        result_path(self.options.track_template, None)
+        result_path(self.options.disc_template)
+
         if self.options.logger:
             try:
                 self.logger = result.getLoggers()[self.options.logger]()
@@ -314,10 +294,10 @@ Log files will log the path to tracks relative to this directory.
         self.program.result.overread = self.options.overread
         self.program.result.logger = self.options.logger
 
-        discName = self.program.getPath(self.program.outdir,
-                                        self.options.disc_template,
-                                        self.mbdiscid,
-                                        self.program.metadata)
+        discName = result_path(self.program.outdir,
+                               self.options.disc_template,
+                               self.mbdiscid,
+                               self.program.metadata)
         dirname = os.path.dirname(discName)
         if os.path.exists(dirname):
             logs = glob.glob(os.path.join(dirname, '*.log'))
@@ -346,11 +326,11 @@ Log files will log the path to tracks relative to this directory.
                 logger.debug('ripIfNotRipped have trackresult, path %r' %
                              trackResult.filename)
 
-            path = self.program.getPath(self.program.outdir,
-                                        self.options.track_template,
-                                        self.mbdiscid,
-                                        self.program.metadata,
-                                        track_number=number) + '.flac'
+            path = result_path(self.program.outdir,
+                               self.options.track_template,
+                               self.mbdiscid,
+                               self.program.metadata,
+                               track_number=number) + '.flac'
             logger.debug('ripIfNotRipped: path %r' % path)
             trackResult.number = number
 

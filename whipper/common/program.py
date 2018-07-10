@@ -70,21 +70,6 @@ class Program:
         self._stdout = stdout
         self._config = config
 
-        d = {}
-
-        for key, default in list({
-            'fat': True,
-            'special': False
-        }.items()):
-            value = None
-            value = self._config.getboolean('main', 'path_filter_' + key)
-            if value is None:
-                value = default
-
-            d[key] = value
-
-        self._filter = path.PathFilter(**d)
-
     def setWorkingDirectory(self, workingDirectory):
         if workingDirectory:
             logger.info('Changing to working directory %s' % workingDirectory)
@@ -168,76 +153,6 @@ class Program:
         elif metadata.barcode:
             template_part += ' (%s)' % metadata.barcode
         return template_part
-
-    def getPath(self, outdir, template, mbdiscid, metadata, track_number=None):
-        """
-        Return disc or track path relative to outdir according to
-        template. Track paths do not include extension.
-
-        Tracks are named according to the track template, filling in
-        the variables and adding the file extension. Variables
-        exclusive to the track template are:
-          - %t: track number
-          - %a: track artist
-          - %n: track title
-          - %s: track sort name
-
-        Disc files (.cue, .log, .m3u) are named according to the disc
-        template, filling in the variables and adding the file
-        extension. Variables for both disc and track template are:
-          - %A: album artist
-          - %S: album sort name
-          - %d: disc title
-          - %y: release year
-          - %r: release type, lowercase
-          - %R: Release type, normal case
-          - %x: audio extension, lowercase
-          - %X: audio extension, uppercase
-        """
-        assert isinstance(outdir, unicode), "%r is not unicode" % outdir
-        assert isinstance(template, unicode), "%r is not unicode" % template
-        v = {}
-        v['A'] = 'Unknown Artist'
-        v['d'] = mbdiscid  # fallback for title
-        v['r'] = 'unknown'
-        v['R'] = 'Unknown'
-        v['B'] = ''  # barcode
-        v['C'] = ''  # catalog number
-        v['x'] = 'flac'
-        v['X'] = v['x'].upper()
-        v['y'] = '0000'
-        if track_number is not None:
-            v['a'] = v['A']
-            v['t'] = '%02d' % track_number
-            if track_number == 0:
-                v['n'] = 'Hidden Track One Audio'
-            else:
-                v['n'] = 'Unknown Track %d' % track_number
-
-        if metadata:
-            release = metadata.release or '0000'
-            v['y'] = release[:4]
-            v['A'] = self._filter.filter(metadata.artist)
-            v['S'] = self._filter.filter(metadata.sortName)
-            v['d'] = self._filter.filter(metadata.title)
-            v['B'] = metadata.barcode
-            v['C'] = metadata.catalogNumber
-            if metadata.releaseType:
-                v['R'] = metadata.releaseType
-                v['r'] = metadata.releaseType.lower()
-            if track_number > 0:
-                v['a'] = self._filter.filter(
-                    metadata.tracks[track_number - 1].artist)
-                v['s'] = self._filter.filter(
-                    metadata.tracks[track_number - 1].sortName)
-                v['n'] = self._filter.filter(
-                    metadata.tracks[track_number - 1].title)
-            elif track_number == 0:
-                # htoa defaults to disc's artist
-                v['a'] = self._filter.filter(metadata.artist)
-
-        template = re.sub(r'%(\w)', r'%(\1)s', template)
-        return os.path.join(outdir, template % v)
 
     def getCDDB(self, cddbdiscid):
         """
